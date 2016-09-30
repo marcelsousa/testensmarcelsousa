@@ -12,25 +12,26 @@ using Imposto.Core.Domain;
 
 namespace TesteImposto
 {
-    public partial class FormImposto : Form
+    public partial class frmImposto : Form
     {
         private Pedido pedido = new Pedido();
+        private string[] estadosBR = {"AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"};
 
-        public FormImposto()
+        public frmImposto()
         {
             InitializeComponent();
-            dataGridViewPedidos.AutoGenerateColumns = true;                       
-            dataGridViewPedidos.DataSource = GetTablePedidos();
+            dgvPedidos.AutoGenerateColumns = true;                       
+            dgvPedidos.DataSource = GetTablePedidos();
             ResizeColumns();
         }
 
         private void ResizeColumns()
         {
-            double mediaWidth = dataGridViewPedidos.Width / dataGridViewPedidos.Columns.GetColumnCount(DataGridViewElementStates.Visible);
+            double mediaWidth = dgvPedidos.Width / dgvPedidos.Columns.GetColumnCount(DataGridViewElementStates.Visible);
 
-            for (int i = dataGridViewPedidos.Columns.Count - 1; i >= 0; i--)
+            for (int i = dgvPedidos.Columns.Count - 1; i >= 0; i--)
             {
-                var coluna = dataGridViewPedidos.Columns[i];
+                var coluna = dgvPedidos.Columns[i];
                 coluna.Width = Convert.ToInt32(mediaWidth);
             }   
         }
@@ -46,29 +47,86 @@ namespace TesteImposto
             return table;
         }
 
-        private void buttonGerarNotaFiscal_Click(object sender, EventArgs e)
-        {            
+        private void btnGerarNotaFiscal_Click(object sender, EventArgs e)
+        {
+            if (!ValidaForm())
+                return;
+
             NotaFiscalService service = new NotaFiscalService();
             pedido.EstadoOrigem = txtEstadoOrigem.Text;
             pedido.EstadoDestino = txtEstadoDestino.Text;
-            pedido.NomeCliente = textBoxNomeCliente.Text;
+            pedido.NomeCliente = txtNomeCliente.Text;
 
-            DataTable table = (DataTable)dataGridViewPedidos.DataSource;
+            DataTable table = (DataTable)dgvPedidos.DataSource;
 
             foreach (DataRow row in table.Rows)
             {
-                pedido.ItensDoPedido.Add(
-                    new PedidoItem()
-                    {
-                        Brinde = Convert.ToBoolean(row["Brinde"]),
-                        CodigoProduto =  row["Codigo do produto"].ToString(),
-                        NomeProduto = row["Nome do produto"].ToString(),
-                        ValorItemPedido = Convert.ToDouble(row["Valor"].ToString())            
-                    });
+                var item = new PedidoItem();
+
+                item.Brinde = Convert.ToString(row["Brinde"]) != "";
+                item.CodigoProduto = row["Codigo do produto"].ToString();
+                item.NomeProduto = row["Nome do produto"].ToString();
+                item.ValorItemPedido = Convert.ToDouble(row["Valor"].ToString());
+
+                pedido.ItensDoPedido.Add(item);
             }
 
             service.GerarNotaFiscal(pedido);
             MessageBox.Show("Operação efetuada com sucesso");
+        }
+
+        private void LimparCampos()
+        {
+            dgvPedidos.DataSource = GetTablePedidos();
+            ResizeColumns();
+            txtEstadoDestino.Text = "";
+            txtEstadoOrigem.Text = "";
+            txtNomeCliente.Text = "";
+        }
+
+        private bool ValidaForm()
+        {
+            if (txtNomeCliente.Text == "")
+            {
+                MessageBox.Show("Preencha o nome do Cliente, por favor.");
+                return false;
+            }
+
+            if (txtEstadoOrigem.Text == "")
+            {
+                MessageBox.Show("Preencha o estado de origem, por favor.");
+                return false;
+            }
+            else
+            {
+                if (!estadosBR.Contains(txtEstadoOrigem.Text))
+                {
+                    MessageBox.Show("Estado de Origem Inválido, verifique por favor.");
+                    return false;
+                }
+            }
+
+            if (txtEstadoDestino.Text == "")
+            {
+                MessageBox.Show("Preencha o estado de Destino, por favor.");
+                return false;
+            }
+            else
+            {
+                if (!estadosBR.Contains(txtEstadoOrigem.Text))
+                {
+                    MessageBox.Show("Estado de Destino Inválido, verifique por favor.");
+                    return false;
+                }
+            }
+
+            if (((DataTable)dgvPedidos.DataSource).Rows.Count == 0)
+            {
+                MessageBox.Show("Inclua ao menos 1 (Um) item, por favor.");
+                return false;
+            }
+
+            return true;
         }
     }
 }

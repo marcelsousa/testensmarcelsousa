@@ -16,7 +16,7 @@ namespace TesteImposto
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new FormImposto()); 
+            Application.Run(new frmImposto()); 
         }
     }
 }
